@@ -1,5 +1,3 @@
-Touch Football Ball ESP GUI by Aurora
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local lp = Players.LocalPlayer
@@ -51,6 +49,8 @@ local enabled = false
 local ball = workspace:FindFirstChild("FootballField") and workspace.FootballField:FindFirstChild("SoccerBall")
 local espBox, line
 
+local DrawingAvailable = (typeof(Drawing) == "table")
+
 local function createESP()
 	if not ball then return end
 
@@ -65,16 +65,25 @@ local function createESP()
 	espBox.Transparency = 0.5
 	espBox.Parent = ball
 
-	-- Line
-	line = Drawing.new("Line")
-	line.Thickness = 2
-	line.Color = Color3.fromRGB(255, 0, 0)
-	line.Visible = true
+	-- Line (only if Drawing API is available)
+	if DrawingAvailable then
+		line = Drawing.new("Line")
+		line.Thickness = 2
+		line.Color = Color3.fromRGB(255, 0, 0)
+		line.Visible = true
+	else
+		line = nil
+	end
 end
 
 local function removeESP()
 	if espBox then espBox:Destroy() espBox = nil end
-	if line then line:Remove() line = nil end
+	if line then
+		if DrawingAvailable then
+			line:Remove()
+		end
+		line = nil
+	end
 end
 
 toggle.MouseButton1Click:Connect(function()
@@ -91,12 +100,16 @@ toggle.MouseButton1Click:Connect(function()
 end)
 
 RunService.RenderStepped:Connect(function()
-	if enabled and ball and line then
-		local ballPos = cam:WorldToViewportPoint(ball.Position)
-		local headPos = cam:WorldToViewportPoint(lp.Character and lp.Character:FindFirstChild("Head") and lp.Character.Head.Position or Vector3.zero)
-		line.From = Vector2.new(headPos.X, headPos.Y)
-		line.To = Vector2.new(ballPos.X, ballPos.Y)
-		line.Visible = true
+	if enabled and ball and line and DrawingAvailable then
+		local ballPos, ballOnScreen = cam:WorldToViewportPoint(ball.Position)
+		local headPos, headOnScreen = cam:WorldToViewportPoint((lp.Character and lp.Character:FindFirstChild("Head") and lp.Character.Head.Position) or Vector3.new())
+		if ballOnScreen and headOnScreen then
+			line.From = Vector2.new(headPos.X, headPos.Y)
+			line.To = Vector2.new(ballPos.X, ballPos.Y)
+			line.Visible = true
+		else
+			line.Visible = false
+		end
 	elseif line then
 		line.Visible = false
 	end
