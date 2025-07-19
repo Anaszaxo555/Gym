@@ -1,0 +1,103 @@
+Touch Football Ball ESP GUI by Aurora
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local lp = Players.LocalPlayer
+local cam = workspace.CurrentCamera
+
+-- GUI
+local gui = Instance.new("ScreenGui", lp:WaitForChild("PlayerGui"))
+gui.Name = "BallESP_GUI"
+gui.ResetOnSpawn = false
+
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 250, 0, 140)
+main.Position = UDim2.new(0.02, 0, 0.4, 0)
+main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+main.BorderSizePixel = 0
+main.BackgroundTransparency = 0.1
+main.Active = true
+main.Draggable = true
+
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "⚽ Ball ESP - by Aurora"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+
+local toggle = Instance.new("TextButton", main)
+toggle.Size = UDim2.new(0.9, 0, 0, 30)
+toggle.Position = UDim2.new(0.05, 0, 0.5, 0)
+toggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggle.Text = "Enable ESP"
+toggle.Font = Enum.Font.Gotham
+toggle.TextSize = 16
+toggle.BorderSizePixel = 0
+
+local status = Instance.new("TextLabel", main)
+status.Size = UDim2.new(1, 0, 0, 25)
+status.Position = UDim2.new(0, 0, 1, -25)
+status.BackgroundTransparency = 1
+status.Text = "Status: ❌ Disabled"
+status.TextColor3 = Color3.fromRGB(200, 200, 200)
+status.Font = Enum.Font.Gotham
+status.TextSize = 14
+
+-- ESP Script
+local enabled = false
+local ball = workspace:FindFirstChild("FootballField") and workspace.FootballField:FindFirstChild("SoccerBall")
+local espBox, line
+
+local function createESP()
+	if not ball then return end
+
+	-- Box
+	espBox = Instance.new("BoxHandleAdornment")
+	espBox.Name = "ESPBox"
+	espBox.Size = ball.Size + Vector3.new(0.3, 0.3, 0.3)
+	espBox.Adornee = ball
+	espBox.AlwaysOnTop = true
+	espBox.ZIndex = 5
+	espBox.Color3 = Color3.fromRGB(0, 255, 0)
+	espBox.Transparency = 0.5
+	espBox.Parent = ball
+
+	-- Line
+	line = Drawing.new("Line")
+	line.Thickness = 2
+	line.Color = Color3.fromRGB(255, 0, 0)
+	line.Visible = true
+end
+
+local function removeESP()
+	if espBox then espBox:Destroy() espBox = nil end
+	if line then line:Remove() line = nil end
+end
+
+toggle.MouseButton1Click:Connect(function()
+	enabled = not enabled
+	toggle.Text = enabled and "Disable ESP" or "Enable ESP"
+	status.Text = "Status: " .. (enabled and "✅ Enabled" or "❌ Disabled")
+
+	if enabled then
+		ball = workspace:FindFirstChild("FootballField") and workspace.FootballField:FindFirstChild("SoccerBall")
+		createESP()
+	else
+		removeESP()
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	if enabled and ball and line then
+		local ballPos = cam:WorldToViewportPoint(ball.Position)
+		local headPos = cam:WorldToViewportPoint(lp.Character and lp.Character:FindFirstChild("Head") and lp.Character.Head.Position or Vector3.zero)
+		line.From = Vector2.new(headPos.X, headPos.Y)
+		line.To = Vector2.new(ballPos.X, ballPos.Y)
+		line.Visible = true
+	elseif line then
+		line.Visible = false
+	end
+end)
